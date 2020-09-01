@@ -1,0 +1,406 @@
+@startuml 3DBoardGame_WholeFigure
+Title 3DBoardGame全体像 4/3 130
+namespace GameManager{
+
+    class ManagerStore{
+        +static PlayerBase humanPlayer
+        +static PlayerBase cp
+        +static FieldManager fieldManager
+        +static PiecesManager piecesManager
+        +static InputManager input
+    }
+
+    class Winner{
+	     static int winner=-1	//-1引き分け　CP1、HumanPlayer0
+    }
+
+
+
+    namespace GameSetUp{
+
+         class GameSetUp{
+
+        }
+
+        class GameSetUpFactory{
+            ListCtrl GetListCtrlListener()
+            PiecesManager GetPiecesManagerListener()
+
+        }
+
+        class PointManager{
+            void AddPoint(Picees piece)
+            void ReducePoint(Pieces piece)
+            int GetPoint()
+        }
+
+        class SetUpCameraManager{
+            void ChangeSetUpCamera()
+        }
+
+
+        GameSetUp --> GameSetUpFactory
+        GameSetUp --> SetUpCameraManager
+        GameSetUp -->PointManager
+
+    }
+
+
+    namespace PlayGameManager{
+
+        class PlayGame{
+          -int SelectedObjectId
+        }
+
+        class TurnManager{
+            int crrTurn
+
+            int GetTurn()
+            void ChangeTurn()
+        }
+
+
+        class PlayCameraManager{
+            int crrCameraId
+
+            void ChangeCamera(int pieceId)
+        }
+
+        class PlayGameFactory{
+            ListCtrl GetListCtrlListener()
+            FieldManager GetFieldManagerListener()
+
+        }
+
+        PlayGame --> GameJudgement
+        PlayGame --> PlayGameFactory
+        PlayGame -->TurnManager
+        PlayGame -->PlayCameraManager
+
+
+    }
+
+    note top of StateBase:Mono継承
+
+    abstract StateBase{
+        InputManager input
+        SoundManager sound
+    }
+
+
+
+
+    namespace ListManager{
+        interface IListManager{
+            List<Pieces pieces> EnumPieces()
+            void GetSelectedPieces() : GameObject
+            void DisplayList()
+        }
+
+
+
+        class ListCtrl{
+            List<int pieceId> EnabledPiecesId
+        }
+
+        ListCtrl --|> IListManager
+
+
+    }
+
+    namespace TitleManager{
+        interface ITitle{
+            void StartGame()
+        }
+
+        class Title{
+        }
+
+        Title --|>ITitle
+    }
+
+    namespace ResultManager{
+        interface IResult{
+            void SetResult(int winnerId)
+            void Restart()
+            void CalcurateScore()
+        }
+
+        class Result{
+
+        }
+
+        Result --|>IResult
+    }
+
+    GameManager.GameSetUp.GameSetUp-u--|>StateBase
+    GameManager.PlayGameManager.PlayGame -u--|>StateBase
+    GameManager.TitleManager.Title-u--|>StateBase
+    GameManager.ResultManager.Result -u--|>StateBase
+
+
+    GameManager.PlayGameManager.PlayGame -u-->ManagerStore
+    GameManager.GameSetUp.GameSetUp -u--->ManagerStore
+
+    GameManager.GameSetUp.GameSetUp -u--->GameManager.PlayGameManager.PlayCameraManager
+
+
+
+
+GameManager.PlayGameManager.PlayGameFactory --u>GameManager.ListManager.ListCtrl
+GameManager.GameSetUp.GameSetUpFactory --u>GameManager.ListManager.ListCtrl
+}
+
+
+
+
+namespace Camera{
+    interface ICamera{
+        +vector3 GetCameraPostion(void)
+        +vector3 GetCameraAngle()
+        +void ActivateCamera(bool OnFlg)
+    }
+
+    abstract CameraBase{
+        -vector3 CameraPosition
+        -vector3 CameraAngle
+    }
+
+    CameraBase --|>ICamera
+
+    class PlayCamera{
+
+    }
+
+    class SetUpCamera{
+
+    }
+
+    PlayCamera --|>CameraBase
+    SetUpCamera --|>CameraBase
+}
+
+namespace Field{
+
+interface IField{
+    Vector3 GetPositionFromId(int id)
+    void WriteFieldPieceInfo(int pieceId)
+    void DeleteFieldPieceInfo(int pieceId)
+    void ReadFieldPieceInfo(int pieceId)
+    List<int id> GetAdjacentSurface(int crrId, Vector3 FowardDirection)
+    void PointMoveableFace( List<int> movableFace)
+    int ConvertRelative2Abs(int crrId,int relativeId,Vector3 pieceDierection);
+
+    void SetPieceAsChild(int faceId,GameObject Piece)
+
+    void AligmentObject(GameObject obj)
+    void RotateObj(GameObject obj)
+}
+
+class SurfaceInfo{
+    +int FaceId
+    +int SideNum
+    +Vector3 FacePosition
+}
+
+class FieldManager{
+
+}
+
+class FieldInfo{
+    +Dictionary<int id , Vector3 position> FieldInfo
+}
+
+
+
+class FieldPieceInfo{
+    +Dictionary<int faceId , int pieceId  > FieldPieceInfo
+}
+
+FieldManager-->FieldInfo
+FieldManager -->FieldPieceInfo
+
+
+FieldManager --|>IField
+
+FieldInfo --> SurfaceInfo
+
+}
+
+namespace CP{
+    interface ICP{
+        void SetInfo(PlayerBase cp , FieldManager  field)
+        CPMove BestMove()
+    }
+
+    class CPMove{
+        -int pieceId
+        -int moveFaceId //0が回転　相対IDで返す
+        -int rotateDirection //0が移動
+        int GetMovePieceId()
+        int GetMoveFaceId()
+        int GetRotateDirection()
+    }
+
+    class CPBrain{
+
+    }
+
+    CPBrain --|>ICP
+    CPBrain -->CPMove
+
+}
+
+enum PieceKind{
+    King,
+    Queen,
+    Pawn
+}
+
+namespace Player{
+  interface IPlayer{
+    +List<Pieces> GetMyPieces(void)
+    +int GetPlayerId(void)
+    +void AddMyPieces(PieceKind piecekind,int absolutefaceId)
+    +void DeleteMyPieces(int pieceId)
+    +List<Pieces> GetMyPiecesByKind(PieceKind)
+    +bool HasPiece(int pieceId)
+  }
+
+  abstract PlayerBase{
+      -List<Pieces> MyPieces
+      -int PlayerId
+  }
+
+  PlayerBase --|>IPlayer
+
+}
+Player.PlayerBase-->PieceKind
+Player.PlayerBase-->Piece.Pieces
+
+namespace  Piece{
+
+    interface IPieces{
+        void Init(int pieceId, PieceKind kindName);
+        bool MovePiece(Vector3 position)
+        bool RotatePiece(int rotateDirection)//正:右回転、負:左回転
+        int GetPieceId()
+        PieceKind GetPieceKind()
+    }
+
+    interface IPiecesManager{
+        float GetSummonCost(PieceKind pieceKind);
+        Dictionary<int SurfaceType List<bool canMove>> GetMoveRange(PieceKind pieceKind);
+    }
+
+    class Pieces{
+      - int Id = 100;
+      - PieceKind Name = null;
+      + CameraBase PieceCamera
+    }
+
+    class PiecesManager{
+        -int PiecsNum=0;
+        Dictionary<PieceKind  pieceId,PieceInfo  PieceObj> AllPieceInfo
+    }
+
+    abstract  PieceInfo{
+      PieceKind Name;
+      float SummonCost;
+      Dictionary<int SurfaceType List<bool canMove>> MoveRange
+      public GameObject Prefab
+    }
+
+    King -d-|>PieceInfo
+    Queen -d-|>PieceInfo
+    Rook -d-|>PieceInfo
+    Bishop -d-|>PieceInfo
+    Pawn -d-|>PieceInfo
+
+    PiecesManager-->King
+    PiecesManager-->Queen
+    PiecesManager-->Rook
+    PiecesManager-->Bishop
+    PiecesManager-->Pawn
+
+    PiecesManager-u->IPiecesManager
+
+
+    Pieces --|>IPieces
+
+}
+Piece--u>PieceKind
+
+
+namespace Sound{
+    interface ISound{
+        void PlayBGM(int bgmId )
+        void StopBGM(int bgmId )
+        void PlaySE(int seId)
+    }
+
+    class SoundManager{
+
+
+    }
+
+    class BGMInfo{
+            +Dictionary<id BGMId , string BGMName>  BgmInfo
+    }
+
+    class SEInfo{
+        +Dictionary<id SEId , string SEName>  SEInfo
+    }
+
+    SoundManager --|>ISound
+
+    SoundManager --> BGMInfo
+    SoundManager -->SEInfo
+}
+
+namespace InputID{
+    interface IInput{
+         GameObject GetTouchListener()
+    }
+
+    class InputManager{
+
+    }
+
+    class InputEventFactory{
+        GameObject GetTouch(GameObject)
+    }
+
+    abstract InputEvent{
+        float GetTouchDeltaTime()
+    }
+
+
+    class TouchEvent{
+
+        int GetTouchObjectId()
+    }
+
+    InputManager -u-|>IInput
+    InputManager-->InputEventFactory
+
+    TouchEvent -u-|> InputEvent
+
+    InputEventFactory -->TouchEvent
+}
+
+GameManager.ManagerStore---->Player.PlayerBase
+GameManager.ManagerStore---->Field.FieldManager
+GameManager.ManagerStore---->Piece.PiecesManager
+GameManager.StateBase---->InputID.InputManager
+GameManager.StateBase---->Sound.SoundManager
+GameManager.PlayGameManager.PlayGame---->CP.CPBrain
+GameManager.GameSetUp.GameSetUp---->CP.CPBrain
+GameManager.PlayGameManager.GameJudgement-u-->GameManager.Winner
+GameManager.ResultManager.Result-u-->GameManager.Winner
+
+
+
+Piece.Pieces--->Camera.CameraBase
+
+@enduml
