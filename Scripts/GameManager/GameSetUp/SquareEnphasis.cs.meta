@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: 7b396f49bdf5d5e4f9e638c3cc29ed13
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - selectSquareColor: {instanceID: 0}
+  - resetSquareColor: {fileID: 2100000, guid: 96a5574e40d0b794bae964c3567ff902, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
